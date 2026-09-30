@@ -24,6 +24,7 @@ export function checkPolicy(
   usage: PolicyUsage,
   amountUsd: string,
   beneficiaryHandle: string,
+  reservedUsd = 0,
 ): PolicyCheckResult {
   const handle = beneficiaryHandle.toLowerCase();
   const allowed = policy.allowedHandles.map((h) => h.toLowerCase());
@@ -45,9 +46,8 @@ export function checkPolicy(
   }
 
   const currentKey = monthKey();
-  const spent =
-    usage.monthKey === currentKey ? usage.spentUsd : 0;
-  if (spent + amount > policy.monthlyCapUsd) {
+  const spent = usage.monthKey === currentKey ? usage.spentUsd : 0;
+  if (spent + reservedUsd + amount > policy.monthlyCapUsd) {
     return {
       ok: false,
       violation: "monthly_cap_exceeded",

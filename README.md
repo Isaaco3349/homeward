@@ -40,12 +40,18 @@ Open [http://localhost:3000](http://localhost:3000) → **Open agent**.
 
 **Security:** never commit `.env.local` or API keys.
 
+## Docs
+
+- [Beneficiary setup](./docs/beneficiary-setup.md) — handles, API keys, webhooks, cron.
+
 ## Test flow (M1)
 
 1. **Mock:** leave `MOOVE_API_KEY` empty → confirm creates a fake `moove.xyz/@handle/pay/…` URL.
 2. **Live:** set key + handle → confirm returns a real checkout URL from `https://api.moove.xyz`.
 3. **Health:** `GET /api/health`.
 4. **Policy:** `/settings` — monthly cap, per-transfer max, allowed `@handles`.
+5. **History:** `/history` — all plans; **Reconcile with Moove** when `MOOVE_API_KEY` is set.
+6. **Recurring:** confirm a monthly plan, then `POST /api/cron/due-links` with `CRON_SECRET` (see beneficiary doc).
 
 ## Scripts
 
