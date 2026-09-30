@@ -13,6 +13,9 @@ export function AppHeader() {
           <Link href="/app" className="hover:text-header-fg">
             Agent
           </Link>
+          <Link href="/history" className="hover:text-header-fg">
+            History
+          </Link>
           <Link href="/settings" className="hover:text-header-fg">
             Policy
           </Link>

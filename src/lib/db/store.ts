@@ -10,12 +10,15 @@ const DATA_FILE = path.join(DATA_DIR, "homeward.json");
 async function ensureStore(): Promise<HomewardStore> {
   try {
     const raw = await fs.readFile(DATA_FILE, "utf8");
-    return JSON.parse(raw) as HomewardStore;
+    const parsed = JSON.parse(raw) as HomewardStore;
+    if (!parsed.schedules) parsed.schedules = [];
+    return parsed;
   } catch {
     const initial: HomewardStore = {
       policy: DEFAULT_POLICY,
       usage: { monthKey: getCurrentMonthKey(), spentUsd: 0 },
       plans: [],
+      schedules: [],
       processedWebhookEventIds: [],
     };
     await persist(initial);

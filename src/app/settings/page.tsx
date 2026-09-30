@@ -49,8 +49,9 @@ export default function SettingsPage() {
       <main className="mx-auto w-full max-w-lg flex-1 px-4 py-8">
         <h1 className="text-xl font-semibold text-text">Spend policy</h1>
         <p className="mt-2 text-sm text-text-muted">
-          Caps apply before Homeward creates a Moove payment link. Monthly usage
-          increments on confirm (not on webhook).
+          Caps apply before Homeward creates a Moove payment link. Unpaid links
+          reserve headroom; monthly totals increment when Moove webhooks report
+          settlement.
         </p>
 
         {!policy ? (
@@ -116,7 +117,7 @@ export default function SettingsPage() {
             {usage ? (
               <p className="text-xs text-text-muted">
                 This month ({usage.monthKey}): ${usage.spentUsd.toFixed(2)}{" "}
-                reserved via confirmed links.
+                settled (via webhooks).
               </p>
             ) : null}
 
