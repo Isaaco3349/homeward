@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+/*
+  Homeward design tokens — orange + slate (single source of truth).
+*/
+:root {
+  --bg: #0f1419;
+  --surface: #1a222d;
+  --surface-elevated: #243041;
+  --accent: #f97316;
+  --accent-hover: #fb923c;
+  --accent-muted: rgba(249, 115, 22, 0.15);
+  --accent-secondary: #38bdf8;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #334155;
+
+  --header-bg: #1a222d;
+  --header-fg: #f1f5f9;
+  --header-muted: #94a3b8;
+
+  --semantic-success: #34d399;
+  --semantic-error: #f87171;
+  --semantic-warning: #fbbf24;
+
+  --font-sans: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-muted: var(--accent-muted);
+  --color-accent-secondary: var(--accent-secondary);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-border: var(--border);
+  --color-header-bg: var(--header-bg);
+  --color-header-fg: var(--header-fg);
+  --color-header-muted: var(--header-muted);
+  --color-semantic-success: var(--semantic-success);
+  --color-semantic-error: var(--semantic-error);
+  --color-semantic-warning: var(--semantic-warning);
+  --font-sans: var(--font-sans);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+}
