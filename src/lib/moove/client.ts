@@ -1,3 +1,4 @@
+import { normalizeMooveHandle } from "@/lib/handles/normalize";
 import type {
   MooveCreatePaymentLinkRequest,
   MooveCreatePaymentLinkResponse,
@@ -52,7 +53,9 @@ export async function createPaymentLink(
 ): Promise<MooveCreatePaymentLinkResponse> {
   if (mooveMockEnabled()) {
     const id = crypto.randomUUID();
-    const handle = process.env.BENEFICIARY_HANDLE?.trim() || "beneficiary";
+    const handle =
+      normalizeMooveHandle(process.env.BENEFICIARY_HANDLE || "beneficiary") ||
+      "beneficiary";
     return {
       id,
       url: `https://moove.xyz/@${handle}/pay/${id}`,

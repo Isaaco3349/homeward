@@ -6,8 +6,9 @@
 | --- | --- | --- |
 | **M1** | Repo scaffold: chat shell, intent → plan, confirm → payment link (mock or live), webhook handler | Done |
 | **M2** | Policy caps + beneficiary onboarding docs; list/reconcile links | Done |
-| **M3** | 5–10 real paid links; idempotent webhooks persisted | Todo |
+| **M3** | 5–10 real paid links; idempotent webhooks persisted | In progress — use [grant-evidence.md](./docs/grant-evidence.md) |
 | **M4** | Recurring schedule (cron) + payer notifications | Partial (cron + schedules; notifications todo) |
+| **Agent UX** | Voice (mic + TTS) + text → intent → confirm → Moove link | Done |
 
 ## Architecture notes
 
@@ -24,3 +25,4 @@
 | M2 | Usage counts on webhook settlement; unpaid links reserve monthly cap |
 | M2 | `/history` + `POST /api/reconcile` + [docs/beneficiary-setup.md](./docs/beneficiary-setup.md) |
 | M4 | Monthly schedules on confirm; `POST /api/cron/due-links` (UTC) |
+| Agent | Browser STT/TTS on `/app`; handle normalize for `BENEFICIARY_HANDLE` |

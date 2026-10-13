@@ -3,6 +3,7 @@ import type { PaymentPlan, RecurringSchedule } from "@/lib/db/types";
 import { mooveMockEnabled } from "@/lib/moove/client";
 import { checkPolicy } from "@/lib/policy/checkPolicy";
 import { reservedUsdThisMonth } from "@/lib/policy/reserved";
+import { normalizeMooveHandle } from "@/lib/handles/normalize";
 import { createPaymentLinkForPlan } from "./createPaymentLinkForPlan";
 
 export type ConfirmPlanResult =
@@ -45,16 +46,17 @@ export async function confirmPlan(planId: string): Promise<ConfirmPlanResult> {
     };
   }
 
-  const configuredHandle =
-    process.env.BENEFICIARY_HANDLE?.trim().toLowerCase() ?? "";
+  const configuredHandle = process.env.BENEFICIARY_HANDLE
+    ? normalizeMooveHandle(process.env.BENEFICIARY_HANDLE)
+    : "";
   if (
     configuredHandle &&
-    plan.beneficiaryHandle.toLowerCase() !== configuredHandle
+    normalizeMooveHandle(plan.beneficiaryHandle) !== configuredHandle
   ) {
     return {
       ok: false,
       status: 422,
-      error: `This demo key is tied to @${configuredHandle}. Intent was @${plan.beneficiaryHandle}.`,
+      error: `MOOVE_API_KEY is for @${configuredHandle}, but this plan pays @${plan.beneficiaryHandle}.`,
     };
   }
 

@@ -7,4 +7,5 @@ export interface ChatMessage {
   role: ChatRole;
   body: string;
   plan?: PaymentPlan;
+  viaVoice?: boolean;
 }

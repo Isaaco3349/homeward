@@ -43,6 +43,12 @@ Open [http://localhost:3000](http://localhost:3000) → **Open agent**.
 ## Docs
 
 - [Beneficiary setup](./docs/beneficiary-setup.md) — handles, API keys, webhooks, cron.
+- [Moove program fit](./docs/moove-program-fit.md) — alignment + milestone framing.
+- [Grant evidence table](./docs/grant-evidence.md) — M3 transaction log template.
+
+## Agent (voice + text)
+
+On `/app`, use the **mic** (Chrome/Edge) or type natural language, e.g. *Send $100 to @mum every 2nd*. Homeward parses intent, applies **policy**, requires **confirm**, then creates a Moove payment link. Optional TTS reads back the plan when you used voice input.
 
 ## Test flow (M1)
 
