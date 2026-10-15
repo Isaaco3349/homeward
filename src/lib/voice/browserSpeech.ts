@@ -9,6 +9,22 @@ export function isSpeechSynthesisSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
+/** Prompts for mic permission; required before recognition on some setups. */
+export async function ensureMicrophonePermission(): Promise<
+  "granted" | "denied" | "unavailable"
+> {
+  if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
+    return "unavailable";
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    for (const track of stream.getTracks()) track.stop();
+    return "granted";
+  } catch {
+    return "denied";
+  }
+}
+
 export function createSpeechRecognition(): SpeechRecognition | null {
   if (typeof window === "undefined") return null;
   const Ctor =

@@ -1,11 +1,13 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createSpeechRecognition,
+  ensureMicrophonePermission,
   isSpeechRecognitionSupported,
   stopSpeaking,
 } from "@/lib/voice/browserSpeech";
+import { speechErrorMessage } from "@/lib/voice/speechErrors";
 
 export type SendOptions = {
   viaVoice?: boolean;
@@ -20,6 +22,7 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [listening, setListening] = useState(false);
+  const [startingMic, setStartingMic] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
@@ -27,6 +30,7 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
     setVoiceSupported(isSpeechRecognitionSupported());
     return () => {
       recognitionRef.current?.abort();
+      recognitionRef.current = null;
     };
   }, []);
 
@@ -40,29 +44,53 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
     [disabled, onSend],
   );
 
-  function handleSubmit(event: FormEvent) {
-    event.preventDefault();
-    submitText(value);
-  }
+  const stopRecognition = useCallback(() => {
+    try {
+      recognitionRef.current?.stop();
+    } catch {
+      /* already stopped */
+    }
+    recognitionRef.current = null;
+    setListening(false);
+  }, []);
 
-  const toggleListening = useCallback(() => {
+  const toggleListening = useCallback(async () => {
     setVoiceError(null);
 
-    if (listening) {
-      recognitionRef.current?.stop();
-      setListening(false);
+    if (listening || startingMic) {
+      stopRecognition();
       return;
     }
 
     if (!voiceSupported) {
-      setVoiceError("Voice needs Chrome or Edge with microphone access.");
+      setVoiceError(
+        "Voice input needs desktop Chrome or Edge. Firefox does not support Web Speech recognition.",
+      );
       return;
     }
 
+    setStartingMic(true);
     stopSpeaking();
+
+    const mic = await ensureMicrophonePermission();
+    if (mic === "denied") {
+      setVoiceError(
+        "Microphone blocked. Click the lock icon in the address bar → allow Microphone → reload.",
+      );
+      setStartingMic(false);
+      return;
+    }
+    if (mic === "unavailable") {
+      setVoiceError("Microphone API unavailable in this browser.");
+      setStartingMic(false);
+      return;
+    }
+
+    recognitionRef.current?.abort();
     const recognition = createSpeechRecognition();
     if (!recognition) {
       setVoiceError("Could not start speech recognition.");
+      setStartingMic(false);
       return;
     }
 
@@ -76,39 +104,46 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
         if (event.results[i]!.isFinal) final += transcript;
         else interim += transcript;
       }
-      const draft = final || interim;
-      if (draft) setValue(draft.trim());
+      const draft = (final || interim).trim();
+      if (draft) setValue(draft);
       if (final.trim()) {
-        recognition.stop();
+        stopRecognition();
         submitText(final, { viaVoice: true });
       }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      if (event.error === "aborted") {
-        setVoiceError(null);
-      } else if (event.error === "no-speech") {
-        setVoiceError("I did not hear anything. Try again.");
-      } else if (event.error === "not-allowed") {
-        setVoiceError("Microphone permission is blocked.");
-      } else {
-        setVoiceError("Voice failed. You can type instead.");
-      }
-      setListening(false);
+      const msg = speechErrorMessage(event.error);
+      if (msg) setVoiceError(msg);
+      stopRecognition();
     };
 
-    recognition.onend = () => setListening(false);
+    recognition.onend = () => {
+      setListening(false);
+      recognitionRef.current = null;
+    };
 
     try {
       recognition.start();
       setListening(true);
     } catch {
-      setVoiceError("Could not start listening.");
-      setListening(false);
+      setVoiceError(
+        "Could not start listening. Wait a second and tap the mic again.",
+      );
+      stopRecognition();
+    } finally {
+      setStartingMic(false);
     }
-  }, [listening, voiceSupported, submitText]);
+  }, [
+    listening,
+    startingMic,
+    voiceSupported,
+    submitText,
+    stopRecognition,
+  ]);
 
-  const micDisabled = disabled || !voiceSupported;
+  const micBusy = disabled || startingMic;
+  const micDisabled = micBusy || !voiceSupported;
 
   return (
     <div className="border-t border-border bg-surface p-4">
@@ -119,7 +154,12 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
       ) : null}
       {listening ? (
         <p className="mx-auto mb-2 max-w-3xl text-xs text-text-muted">
-          Listening… e.g. &quot;Send five dollars to @isaacony&quot;
+          Listening… say &quot;Send one dollar to at isaacony&quot;
+        </p>
+      ) : null}
+      {startingMic ? (
+        <p className="mx-auto mb-2 max-w-3xl text-xs text-text-muted">
+          Starting microphone…
         </p>
       ) : null}
       <div className="mx-auto flex max-w-3xl gap-2">
@@ -140,7 +180,7 @@ export function ChatInput({ disabled, onSend }: ChatInputProps) {
         <button
           type="button"
           disabled={micDisabled}
-          onClick={toggleListening}
+          onClick={() => void toggleListening()}
           aria-pressed={listening}
           title={
             listening ? "Stop listening" : "Speak your payment instruction"
