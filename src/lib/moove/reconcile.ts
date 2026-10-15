@@ -1,3 +1,4 @@
+import { collectDistinctApiKeys } from "@/lib/beneficiaries/resolveApiKey";
 import { listPaymentLinks } from "@/lib/moove/client";
 import { getStore, saveStore } from "@/lib/db/store";
 import type { PaymentPlan } from "@/lib/db/types";
@@ -13,23 +14,25 @@ export async function reconcilePlansWithMoove(): Promise<ReconcileSummary> {
   let mooveLinksFetched = 0;
   let plansUpdated = 0;
 
-  let offset = 0;
   const linkById = new Map<
     string,
     { status: string; transactionUrl?: string | null }
   >();
 
-  for (;;) {
-    const page = await listPaymentLinks({ offset });
-    mooveLinksFetched += page.data.length;
-    for (const row of page.data) {
-      linkById.set(row.id, {
-        status: row.status,
-        transactionUrl: row.transactionUrl,
-      });
+  for (const apiKey of collectDistinctApiKeys(store)) {
+    let offset = 0;
+    for (;;) {
+      const page = await listPaymentLinks({ offset }, apiKey);
+      mooveLinksFetched += page.data.length;
+      for (const row of page.data) {
+        linkById.set(row.id, {
+          status: row.status,
+          transactionUrl: row.transactionUrl,
+        });
+      }
+      if (page.nextOffset == null) break;
+      offset = page.nextOffset;
     }
-    if (page.nextOffset == null) break;
-    offset = page.nextOffset;
   }
 
   for (const plan of store.plans) {

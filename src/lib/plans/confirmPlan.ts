@@ -1,9 +1,12 @@
 import { getPlan, getStore, saveStore, updatePlan } from "@/lib/db/store";
 import type { PaymentPlan, RecurringSchedule } from "@/lib/db/types";
-import { mooveMockEnabled } from "@/lib/moove/client";
 import { checkPolicy } from "@/lib/policy/checkPolicy";
 import { reservedUsdThisMonth } from "@/lib/policy/reserved";
-import { normalizeMooveHandle } from "@/lib/handles/normalize";
+import {
+  missingBeneficiaryKeyMessage,
+  resolveApiKeyForHandle,
+} from "@/lib/beneficiaries/resolveApiKey";
+import { mooveMockForRequest } from "@/lib/moove/client";
 import { createPaymentLinkForPlan } from "./createPaymentLinkForPlan";
 
 export type ConfirmPlanResult =
@@ -46,22 +49,20 @@ export async function confirmPlan(planId: string): Promise<ConfirmPlanResult> {
     };
   }
 
-  const configuredHandle = process.env.BENEFICIARY_HANDLE
-    ? normalizeMooveHandle(process.env.BENEFICIARY_HANDLE)
-    : "";
-  if (
-    configuredHandle &&
-    normalizeMooveHandle(plan.beneficiaryHandle) !== configuredHandle
-  ) {
+  const apiKey = resolveApiKeyForHandle(store, plan.beneficiaryHandle);
+  if (!apiKey && !mooveMockForRequest(undefined)) {
     return {
       ok: false,
       status: 422,
-      error: `MOOVE_API_KEY is for @${configuredHandle}, but this plan pays @${plan.beneficiaryHandle}.`,
+      error: missingBeneficiaryKeyMessage(plan.beneficiaryHandle),
     };
   }
 
   try {
-    const link = await createPaymentLinkForPlan(plan);
+    const link = await createPaymentLinkForPlan(
+      plan,
+      apiKey ?? "",
+    );
 
     const updated = await updatePlan(planId, {
       status: "awaiting_payment",
@@ -72,7 +73,11 @@ export async function confirmPlan(planId: string): Promise<ConfirmPlanResult> {
 
     if (updated) await upsertScheduleFromPlan(updated);
 
-    return { ok: true, plan: updated!, mock: mooveMockEnabled() };
+    return {
+      ok: true,
+      plan: updated!,
+      mock: mooveMockForRequest(apiKey ?? undefined),
+    };
   } catch (e) {
     const message =
       e instanceof Error ? e.message : "Failed to create payment link";

@@ -26,3 +26,4 @@
 | M2 | `/history` + `POST /api/reconcile` + [docs/beneficiary-setup.md](./docs/beneficiary-setup.md) |
 | M4 | Monthly schedules on confirm; `POST /api/cron/due-links` (UTC) |
 | Agent | Browser STT/TTS on `/app`; handle normalize for `BENEFICIARY_HANDLE` |
+| M2+ | Multi-beneficiary Receive keys in Settings (one Moove key per @handle) |

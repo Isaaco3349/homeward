@@ -11,14 +11,18 @@ function baseUrl(): string {
   return process.env.MOOVE_API_BASE_URL?.replace(/\/$/, "") ?? DEFAULT_BASE;
 }
 
-function apiKey(): string | undefined {
-  const key = process.env.MOOVE_API_KEY?.trim();
-  return key || undefined;
+function defaultEnvKey(): string | undefined {
+  return process.env.MOOVE_API_KEY?.trim() || undefined;
 }
 
 export function mooveMockEnabled(): boolean {
   if (process.env.MOOVE_MOCK === "true") return true;
-  return !apiKey();
+  return !defaultEnvKey();
+}
+
+export function mooveMockForRequest(apiKey?: string): boolean {
+  if (process.env.MOOVE_MOCK === "true") return true;
+  return !apiKey?.trim() && !defaultEnvKey();
 }
 
 export class MooveApiError extends Error {
@@ -50,12 +54,18 @@ async function parseMooveError(res: Response): Promise<MooveApiError> {
 
 export async function createPaymentLink(
   input: MooveCreatePaymentLinkRequest,
+  options?: { apiKey?: string; checkoutHandle?: string },
 ): Promise<MooveCreatePaymentLinkResponse> {
-  if (mooveMockEnabled()) {
+  const key = options?.apiKey?.trim() || defaultEnvKey();
+
+  if (mooveMockForRequest(key)) {
     const id = crypto.randomUUID();
     const handle =
-      normalizeMooveHandle(process.env.BENEFICIARY_HANDLE || "beneficiary") ||
-      "beneficiary";
+      normalizeMooveHandle(
+        options?.checkoutHandle ||
+          process.env.BENEFICIARY_HANDLE ||
+          "beneficiary",
+      ) || "beneficiary";
     return {
       id,
       url: `https://moove.xyz/@${handle}/pay/${id}`,
@@ -65,7 +75,7 @@ export async function createPaymentLink(
   const res = await fetch(`${baseUrl()}/v1/payment-link`, {
     method: "POST",
     headers: {
-      "X-API-Key": apiKey()!,
+      "X-API-Key": key!,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(input),
@@ -75,11 +85,16 @@ export async function createPaymentLink(
   return (await res.json()) as MooveCreatePaymentLinkResponse;
 }
 
-export async function listPaymentLinks(params?: {
-  status?: "active" | "inactive" | "completed";
-  offset?: number;
-}): Promise<MoovePaymentLinkListResponse> {
-  if (mooveMockEnabled()) {
+export async function listPaymentLinks(
+  params?: {
+    status?: "active" | "inactive" | "completed";
+    offset?: number;
+  },
+  apiKey?: string,
+): Promise<MoovePaymentLinkListResponse> {
+  const key = apiKey?.trim() || defaultEnvKey();
+
+  if (mooveMockForRequest(key)) {
     return { data: [], limit: 10, offset: 0, nextOffset: null };
   }
 
@@ -88,7 +103,7 @@ export async function listPaymentLinks(params?: {
   if (params?.offset != null) url.searchParams.set("offset", String(params.offset));
 
   const res = await fetch(url, {
-    headers: { "X-API-Key": apiKey()! },
+    headers: { "X-API-Key": key! },
   });
 
   if (!res.ok) throw await parseMooveError(res);

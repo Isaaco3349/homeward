@@ -24,6 +24,12 @@ export interface PaymentPlan {
   usageAppliedAt?: string;
 }
 
+/** Server-side only — stored in .data/homeward.json (never commit). */
+export interface BeneficiaryAccount {
+  handle: string;
+  mooveApiKey: string;
+}
+
 export interface RecurringSchedule {
   id: string;
   beneficiaryHandle: string;
@@ -39,6 +45,7 @@ export interface HomewardStore {
   policy: import("@/lib/policy/types").SpendPolicy;
   usage: import("@/lib/policy/types").PolicyUsage;
   plans: PaymentPlan[];
+  beneficiaries: BeneficiaryAccount[];
   schedules: RecurringSchedule[];
   processedWebhookEventIds: string[];
 }
